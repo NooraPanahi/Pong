@@ -1,0 +1,3 @@
+/home/lenovo/Desktop/Menu/build/CMakeFiles/MyExecutable.dir
+/home/lenovo/Desktop/Menu/build/CMakeFiles/edit_cache.dir
+/home/lenovo/Desktop/Menu/build/CMakeFiles/rebuild_cache.dir
