@@ -1,6 +1,5 @@
 #include <raylib.h>
 #include "menu.hpp"
-
 int main() {
     InitWindow(1000, 1000, "Menu");
     InitAudioDevice(); 

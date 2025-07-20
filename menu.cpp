@@ -1,4 +1,3 @@
-// menu.cpp
 #include "menu.hpp"
 
 Menu::Menu() : current_state(nullptr) {}
@@ -18,4 +17,8 @@ void Menu::renderCurrentState() {
     } else {
         DrawText("No State Selected!", 100, 100, 20, RED);
     }
+}
+
+State *Menu::get_current_state(){
+    return current_state;
 }

@@ -11,6 +11,7 @@ class Menu{
         Menu() ; 
         void SetState(State*) ; 
         void renderCurrentState(); 
+        State* get_current_state() ; 
         ~Menu();
 };
 

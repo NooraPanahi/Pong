@@ -145,7 +145,7 @@ void NameInputState::displayState(Menu& menu) {
     
     if (mouseClicked && CheckCollisionPointRec(mousePos, continueButton)) {
         if (allFilled){
-          //  menu.SetState(new HelloState) ;
+            menu.SetState(new GameState) ;
             PlaySound(sound) ; 
         }
         else 
@@ -157,3 +157,107 @@ NameInputState::~NameInputState(){
     UnloadSound(sound) ; 
 }
 
+GameState::GameState() 
+    : State("../Assets/Background.png"),
+      playerPaddle(50, GetScreenHeight()/2 - 50),
+      aiPaddle(GetScreenWidth() - 70, GetScreenHeight()/2 - 50),
+      gameBall(GetScreenWidth()/2, GetScreenHeight()/2) {
+    setDifficulty(HARD); // یا EASY/HARD
+    
+    // hitSound = LoadSound("../Assets/sfx/hit.wav");
+    // scoreSound = LoadSound("../Assets/sfx/score.wav");
+    // gameFont = LoadFont("../Assets/fonts/game_font.ttf");
+
+    // SetSoundVolume(hitSound, 0.7f);
+    // SetSoundVolume(scoreSound, 0.5f);
+
+}
+
+GameState::~GameState() {
+    UnloadSound(hitSound);
+    UnloadSound(scoreSound);
+    UnloadFont(gameFont);
+}
+void GameState::displayState(Menu& menu) {
+    updatePhysics();
+    
+    BeginDrawing();
+        ClearBackground(BLACK);
+        
+        DrawTexture(get_background(), 0, 0, WHITE);
+        
+        for (int i = 0; i < GetScreenHeight(); i += 20) {
+            DrawRectangle(GetScreenWidth()/2 - 2, i, 4, 10, WHITE);
+        }
+        
+        playerPaddle.draw();
+        aiPaddle.draw();
+        gameBall.draw();
+        
+        DrawTextEx(gameFont, 
+                  TextFormat("PLAYER: %i", playerScore), 
+                  {(float)GetScreenWidth()/4 - 100, 20}, 
+                  30, 0, GREEN);
+                  
+        DrawTextEx(gameFont, 
+                  TextFormat("AI: %i", aiScore), 
+                  {3.0f*GetScreenWidth()/4 - 50, 20}, 
+                  30, 0, RED);
+        
+         // دکمه بازگشت به منو
+
+    EndDrawing();
+}
+void GameState::updatePhysics() {
+    if (IsKeyDown(KEY_W)) playerPaddle.moveUp();
+    if (IsKeyDown(KEY_S)) playerPaddle.moveDown();
+    
+    aiPaddle.aiMove(gameBall.getY(), gameBall.getVelocity().x);    
+    gameBall.update();
+    
+    if (gameBall.checkCollision(playerPaddle.getRect()) || 
+        gameBall.checkCollision(aiPaddle.getRect())) {
+        PlaySound(hitSound);
+        gameBall.bounceX();
+    }
+    if (abs(gameBall.getVelocity().x) > 8.0f) { 
+        aiPaddle.setSpeed(4.0f);
+    } else {
+        aiPaddle.setSpeed(6.0f);
+    }
+    if (gameBall.outOfBounds()) {
+        PlaySound(scoreSound);
+        (gameBall.getX() < 0) ? aiScore++ : playerScore++;
+        resetGame();
+    }
+}
+void GameState::resetGame() {
+    playerPaddle.reset();
+    aiPaddle.reset();
+    
+    gameBall.reset(GetScreenWidth()/2, GetScreenHeight()/2);
+    
+    if (playerScore >= 5 || aiScore >= 5) { 
+        WaitTime(1.5);
+    } else {
+        WaitTime(0.05);
+    }
+}
+
+// تنظیم دشواری بازی:
+void GameState::setDifficulty(Difficulty diff) {
+    switch(diff) {
+        case EASY:
+            aiPaddle.setSpeed(5.0f);
+            aiPaddle.setErrorRange(25.0f);
+            break;
+        case MEDIUM:
+            aiPaddle.setSpeed(7.0f);
+            aiPaddle.setErrorRange(15.0f);
+            break;
+        case HARD:
+            aiPaddle.setSpeed(10.0f);
+            aiPaddle.setErrorRange(5.0f);
+            break;
+    }
+}
