@@ -50,33 +50,60 @@ class NameInputState : public State {
         ~NameInputState() ; 
 };
 
+class DifficultySelectionState : public State{
+    public:
+        DifficultySelectionState(const std::string&);
+        ~DifficultySelectionState();
+
+        void displayState(Menu& menu) override;
+
+    private:
+        ClickableText easy, medium, hard, back;
+        std::string playerName;
+        Sound clickSound;
+} ;
+
 
 class GameState : public State {
-public:
-    enum Difficulty { EASY, MEDIUM, HARD };
-    GameState();
-    ~GameState();
+    public:
+        enum Difficulty { EASY, MEDIUM, HARD };
+        GameState(std::string , Difficulty);
+        ~GameState();
 
-    void displayState(Menu&) override;
-    void setDifficulty(Difficulty diff);
+        void displayState(Menu&) override;
+        void setDifficulty(Difficulty diff);
 
-private:
-    Paddle player;
-    Paddle ai;
-    Ball ball;
-    int playerScore;
-    int aiScore;
-    Difficulty currentDiff;
-    Sound hitSound;
-    Sound scoreSound;
-    Font font;
+    private:
+        Paddle player;
+        Paddle ai;
+        Ball ball;
+        int playerScore;
+        int aiScore;
+        Difficulty currentDiff;
+        Sound hitSound;
+        Font font;
+        bool paused ;
+        ClickableText pause ;
+        std::string playername ;  
 
-    void handleInput();
-    void update();
-    void checkCollision();
-    void drawScores() const;
-    void resetRound();
-    bool isGameOver() const;
+        void handleInput();
+        void update();
+        void checkCollision();
+        void drawScores() const;
+        void resetRound();
+        bool isGameOver() const;
+};
+
+class GameOverState : public State{
+    private:
+    std::string winnerText;
+    ClickableText backToMenu;
+    Sound clickSound;
+
+    public:
+        GameOverState(const std::string& winner);
+        ~GameOverState();
+        void displayState(Menu&) override;
 };
 
 

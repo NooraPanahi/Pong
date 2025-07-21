@@ -14,6 +14,7 @@ Texture2D State::get_background() const{
     return background;
 }
 
+
 StartState::StartState() 
     : State("../Assets/Background.png"), 
       startButton("../Assets/Startgame.png", {170, 300}),
@@ -145,7 +146,7 @@ void NameInputState::displayState(Menu& menu) {
     
     if (mouseClicked && CheckCollisionPointRec(mousePos, continueButton)) {
         if (allFilled){
-            menu.SetState(new GameState()) ;
+            menu.SetState(new DifficultySelectionState(box.text)) ;
             PlaySound(sound) ; 
         }
         else 
@@ -156,21 +157,66 @@ void NameInputState::displayState(Menu& menu) {
 NameInputState::~NameInputState(){
     UnloadSound(sound) ; 
 }
+DifficultySelectionState::DifficultySelectionState(const std::string& name)
+    : State("../Assets/Background.png"), playerName(name),
+      easy("EASY", {200, 300}, 40, GREEN),
+      medium("MEDIUM", {200, 400}, 40, YELLOW),
+      hard("HARD", {200, 500}, 40, RED),
+      back("Back", {100, 900}, 30, WHITE)
+{
+    clickSound = LoadSound("../Assets/Click.wav");
+}
 
-GameState::GameState()
-    : State("../Assets/Background.png"),
+DifficultySelectionState::~DifficultySelectionState() {
+    UnloadSound(clickSound);
+}
+
+void DifficultySelectionState::displayState(Menu& menu) {
+    DrawTexture(get_background(), 0, 0, WHITE);
+    Vector2 mouse = GetMousePosition();
+    bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+
+    easy.Draw(mouse);
+    medium.Draw(mouse);
+    hard.Draw(mouse);
+    back.Draw(mouse);
+
+    if (easy.isClicked(mouse, click)) {
+        PlaySound(clickSound);
+        menu.SetState(new GameState(playerName, GameState::EASY));
+    }
+    if (medium.isClicked(mouse, click)) {
+        PlaySound(clickSound);
+        menu.SetState(new GameState(playerName, GameState::MEDIUM));
+    }
+    if (hard.isClicked(mouse, click)) {
+        PlaySound(clickSound);
+        menu.SetState(new GameState(playerName, GameState::HARD));
+    }
+    if (back.isClicked(mouse, click)) {
+        PlaySound(clickSound);
+        menu.SetState(new NameInputState());
+    }
+}
+
+GameState::GameState(std::string playername , Difficulty diff)
+    : State("../Assets/background-in-game.jpg"),
       player(50, GetScreenHeight()/2 - 50),
       ai(GetScreenWidth() - 70, GetScreenHeight()/2 - 50),
       ball(GetScreenWidth()/2, GetScreenHeight()/2),
-      playerScore(0), aiScore(0), currentDiff(MEDIUM) {
-    hitSound = LoadSound("../Assets/sfx/hit.wav");
-    scoreSound = LoadSound("../Assets/sfx/score.wav");
+      playerScore(0), aiScore(0),
+      pause {"pause" ,{80 , 850} , 30 , WHITE} ,
+      playername(playername)
+{
+    setDifficulty(diff) ;
+    hitSound = LoadSound("../Assets/Click.wav");
     font = LoadFont("../Assets/BitcountSingle_Cursive-ExtraLight.ttf");
+    paused = false ; 
+    
 }
 
 GameState::~GameState() {
     UnloadSound(hitSound);
-    UnloadSound(scoreSound);
     UnloadFont(font);
 }
 
@@ -184,15 +230,39 @@ void GameState::setDifficulty(Difficulty diff) {
 }
 
 void GameState::displayState(Menu& menu) {
-    handleInput();
-    update();
-
+    
     BeginDrawing();
-    ClearBackground(BLACK);
-    DrawTexture(get_background(), 0, 0, WHITE);
-    player.draw();
-    ai.draw();
-    ball.draw();
+    ClearBackground(BLACK); 
+    Rectangle src = {0.0f , 0.0f , (float)get_background().width , (float)get_background().height};
+    Rectangle dest = { 0.0f, 0.0f, float(GetScreenWidth()), float(GetScreenHeight()) };
+    Vector2 origin = { 0.0f, 0.0f };
+    DrawTexturePro(get_background() , src , dest , origin, 0.0f , WHITE); 
+
+    Vector2 mousePos = GetMousePosition() ; 
+    bool mouseClicked = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+
+    pause.Draw(mousePos) ;
+    if(pause.isClicked(mousePos , mouseClicked)){
+        paused = !paused ; 
+    } 
+
+    if(paused)
+        DrawText("Game Paused" , 370 , 450 , 30 , WHITE) ;
+
+    if(!paused){
+        player.draw();
+        ai.draw();
+        ball.draw();
+        handleInput();
+        update();        
+    }
+
+    if (isGameOver()) {
+        std::string winner = (playerScore > aiScore) ? playername : "AI";
+        menu.SetState(new GameOverState(winner));
+        return; 
+    }
+
     drawScores();
     EndDrawing();
 }
@@ -230,24 +300,47 @@ void GameState::resetRound() {
 }
 
 void GameState::drawScores() const {
-    DrawTextEx(font, TextFormat("Player: %d", playerScore), Vector2{ 50.0f, 20.0f }, 30, 2, GREEN);
-    DrawTextEx(font, TextFormat("AI: %d", aiScore), Vector2{ static_cast<float>(GetScreenWidth()) - 150.0f, 20.0f }, 30, 2, RED);
 
-    if (isGameOver()) {
-        const char* winner = (playerScore > aiScore) ? "Player Wins!" : "AI Wins!";
-        
-        // محاسبه عرض متن با فونت فعلی
-        Vector2 textSize = MeasureTextEx(font, winner, 40, 2);
-        
-        Vector2 position = {
-            (GetScreenWidth() - textSize.x) / 2.0f,
-            GetScreenHeight() / 2.0f
-        };
-        
-        DrawTextEx(font, winner, position, 40, 2, YELLOW);
-    }
+    std::string scoreText = playername + ": " + std::to_string(playerScore) ;
+    std::string Aiscore = "AI: " + std::to_string(aiScore) ;  
+    DrawTextEx(font, scoreText.c_str(), Vector2{ 50.0f, 20.0f }, 30, 2, GREEN);
+    DrawTextEx(font, Aiscore.c_str(), Vector2{ static_cast<float>(GetScreenWidth()) - 150.0f, 20.0f }, 30, 2, RED);
+
 }
 
 bool GameState::isGameOver() const {
     return playerScore >= 5 || aiScore >= 5;
+}
+
+GameOverState::GameOverState(const std::string& winner)
+    : State("../Assets/Background.png"),
+      winnerText(winner + " WINS!"),
+      backToMenu("Back to Menu", {300, 500}, 40, WHITE) {
+    clickSound = LoadSound("../Assets/Click.wav");
+}
+
+GameOverState::~GameOverState() {
+    UnloadSound(clickSound);
+}
+
+void GameOverState::displayState(Menu& menu) {
+    DrawTexture(get_background(), 0, 0, WHITE);
+    
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.5f));
+    
+    Vector2 textSize = MeasureTextEx(GetFontDefault(), winnerText.c_str(), 60, 2);
+    Vector2 textPos = {
+        (GetScreenWidth() - textSize.x)/2,
+        (GetScreenHeight() - textSize.y)/2 - 50
+    };
+    DrawTextEx(GetFontDefault(), winnerText.c_str(), textPos, 60, 2, GOLD);
+    
+    Vector2 mouse = GetMousePosition();
+    bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+    
+    backToMenu.Draw(mouse);
+    if (backToMenu.isClicked(mouse, click)) {
+        PlaySound(clickSound);
+        menu.SetState(new StartState());
+    }
 }
