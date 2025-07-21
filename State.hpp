@@ -5,7 +5,6 @@
 #include "button.hpp"
 #include "menu.hpp"
 #include "tools.hpp"
-#include <unordered_map>
 class Menu ;
 
 class State{
@@ -51,29 +50,34 @@ class NameInputState : public State {
         ~NameInputState() ; 
 };
 
-class GameState: public State{
-    Paddle playerPaddle;
-    Paddle aiPaddle;
-    Ball gameBall;
-    
-    int playerScore = 0;
-    int aiScore = 0;
-    
+
+class GameState : public State {
+public:
+    enum Difficulty { EASY, MEDIUM, HARD };
+    GameState();
+    ~GameState();
+
+    void displayState(Menu&) override;
+    void setDifficulty(Difficulty diff);
+
+private:
+    Paddle player;
+    Paddle ai;
+    Ball ball;
+    int playerScore;
+    int aiScore;
+    Difficulty currentDiff;
     Sound hitSound;
     Sound scoreSound;
-    Font gameFont; 
-    
-    enum Difficulty{EASY , MEDIUM , HARD} ;
-    
-    
-    public:
-        GameState();
-        ~GameState();
-        void setDifficulty(Difficulty diff) ;
-        void displayState(Menu& menu) override;
-        
-        void resetGame();
-        void updatePhysics();
+    Font font;
+
+    void handleInput();
+    void update();
+    void checkCollision();
+    void drawScores() const;
+    void resetRound();
+    bool isGameOver() const;
 };
+
 
 #endif

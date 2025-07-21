@@ -145,7 +145,7 @@ void NameInputState::displayState(Menu& menu) {
     
     if (mouseClicked && CheckCollisionPointRec(mousePos, continueButton)) {
         if (allFilled){
-            menu.SetState(new GameState) ;
+            menu.SetState(new GameState()) ;
             PlaySound(sound) ; 
         }
         else 
@@ -157,107 +157,97 @@ NameInputState::~NameInputState(){
     UnloadSound(sound) ; 
 }
 
-GameState::GameState() 
+GameState::GameState()
     : State("../Assets/Background.png"),
-      playerPaddle(50, GetScreenHeight()/2 - 50),
-      aiPaddle(GetScreenWidth() - 70, GetScreenHeight()/2 - 50),
-      gameBall(GetScreenWidth()/2, GetScreenHeight()/2) {
-    setDifficulty(HARD); // یا EASY/HARD
-    
-    // hitSound = LoadSound("../Assets/sfx/hit.wav");
-    // scoreSound = LoadSound("../Assets/sfx/score.wav");
-    // gameFont = LoadFont("../Assets/fonts/game_font.ttf");
-
-    // SetSoundVolume(hitSound, 0.7f);
-    // SetSoundVolume(scoreSound, 0.5f);
-
+      player(50, GetScreenHeight()/2 - 50),
+      ai(GetScreenWidth() - 70, GetScreenHeight()/2 - 50),
+      ball(GetScreenWidth()/2, GetScreenHeight()/2),
+      playerScore(0), aiScore(0), currentDiff(MEDIUM) {
+    hitSound = LoadSound("../Assets/sfx/hit.wav");
+    scoreSound = LoadSound("../Assets/sfx/score.wav");
+    font = LoadFont("../Assets/BitcountSingle_Cursive-ExtraLight.ttf");
 }
 
 GameState::~GameState() {
     UnloadSound(hitSound);
     UnloadSound(scoreSound);
-    UnloadFont(gameFont);
+    UnloadFont(font);
 }
-void GameState::displayState(Menu& menu) {
-    updatePhysics();
-    
-    BeginDrawing();
-        ClearBackground(BLACK);
-        
-        DrawTexture(get_background(), 0, 0, WHITE);
-        
-        for (int i = 0; i < GetScreenHeight(); i += 20) {
-            DrawRectangle(GetScreenWidth()/2 - 2, i, 4, 10, WHITE);
-        }
-        
-        playerPaddle.draw();
-        aiPaddle.draw();
-        gameBall.draw();
-        
-        DrawTextEx(gameFont, 
-                  TextFormat("PLAYER: %i", playerScore), 
-                  {(float)GetScreenWidth()/4 - 100, 20}, 
-                  30, 0, GREEN);
-                  
-        DrawTextEx(gameFont, 
-                  TextFormat("AI: %i", aiScore), 
-                  {3.0f*GetScreenWidth()/4 - 50, 20}, 
-                  30, 0, RED);
-        
-         // دکمه بازگشت به منو
 
+void GameState::setDifficulty(Difficulty diff) {
+    currentDiff = diff;
+    switch (diff) {
+        case EASY: ai.setSpeed(6.0f); ai.setErrorRange(40.0f); ai.setReactionDelay(0.05f); break;
+        case MEDIUM: ai.setSpeed(8.0f); ai.setErrorRange(25.0f); ai.setReactionDelay(0.02f); break;
+        case HARD: ai.setSpeed(10.0f); ai.setErrorRange(10.0f); ai.setReactionDelay(0.005f); break;
+    }
+}
+
+void GameState::displayState(Menu& menu) {
+    handleInput();
+    update();
+
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawTexture(get_background(), 0, 0, WHITE);
+    player.draw();
+    ai.draw();
+    ball.draw();
+    drawScores();
     EndDrawing();
 }
-void GameState::updatePhysics() {
-    if (IsKeyDown(KEY_W)) playerPaddle.moveUp();
-    if (IsKeyDown(KEY_S)) playerPaddle.moveDown();
-    
-    aiPaddle.aiMove(gameBall.getY(), gameBall.getVelocity().x);    
-    gameBall.update();
-    
-    if (gameBall.checkCollision(playerPaddle.getRect()) || 
-        gameBall.checkCollision(aiPaddle.getRect())) {
-        PlaySound(hitSound);
-        gameBall.bounceX();
-    }
-    if (abs(gameBall.getVelocity().x) > 8.0f) { 
-        aiPaddle.setSpeed(4.0f);
-    } else {
-        aiPaddle.setSpeed(6.0f);
-    }
-    if (gameBall.outOfBounds()) {
-        PlaySound(scoreSound);
-        (gameBall.getX() < 0) ? aiScore++ : playerScore++;
-        resetGame();
-    }
+
+void GameState::handleInput() {
+    if (IsKeyDown(KEY_UP)) player.moveUp();
+    if (IsKeyDown(KEY_DOWN)) player.moveDown();
 }
-void GameState::resetGame() {
-    playerPaddle.reset();
-    aiPaddle.reset();
-    
-    gameBall.reset(GetScreenWidth()/2, GetScreenHeight()/2);
-    
-    if (playerScore >= 5 || aiScore >= 5) { 
-        WaitTime(1.5);
-    } else {
-        WaitTime(0.05);
+
+void GameState::update() {
+    ai.updateAI(ball);
+    ball.update();
+    checkCollision();
+
+    if (ball.isOutOfBounds()) {
+        if (ball.getX() < 0) aiScore++;
+        else playerScore++;
+        resetRound();
     }
 }
 
-// تنظیم دشواری بازی:
-void GameState::setDifficulty(Difficulty diff) {
-    switch(diff) {
-        case EASY:
-            aiPaddle.setSpeed(5.0f);
-            aiPaddle.setErrorRange(25.0f);
-            break;
-        case MEDIUM:
-            aiPaddle.setSpeed(7.0f);
-            aiPaddle.setErrorRange(15.0f);
-            break;
-        case HARD:
-            aiPaddle.setSpeed(10.0f);
-            aiPaddle.setErrorRange(5.0f);
-            break;
+void GameState::checkCollision() {
+    if (ball.checkCollision(player.getRect()) || ball.checkCollision(ai.getRect())) {
+        PlaySound(hitSound);
+        ball.bounceX();
+        float hitY = (ball.getY() - player.getY()) / player.getHeight();
+        ball.setVelocityY(hitY * 10.0f);
     }
+}
+
+void GameState::resetRound() {
+    player.reset();
+    ai.reset();
+    ball.reset();
+}
+
+void GameState::drawScores() const {
+    DrawTextEx(font, TextFormat("Player: %d", playerScore), Vector2{ 50.0f, 20.0f }, 30, 2, GREEN);
+    DrawTextEx(font, TextFormat("AI: %d", aiScore), Vector2{ static_cast<float>(GetScreenWidth()) - 150.0f, 20.0f }, 30, 2, RED);
+
+    if (isGameOver()) {
+        const char* winner = (playerScore > aiScore) ? "Player Wins!" : "AI Wins!";
+        
+        // محاسبه عرض متن با فونت فعلی
+        Vector2 textSize = MeasureTextEx(font, winner, 40, 2);
+        
+        Vector2 position = {
+            (GetScreenWidth() - textSize.x) / 2.0f,
+            GetScreenHeight() / 2.0f
+        };
+        
+        DrawTextEx(font, winner, position, 40, 2, YELLOW);
+    }
+}
+
+bool GameState::isGameOver() const {
+    return playerScore >= 5 || aiScore >= 5;
 }

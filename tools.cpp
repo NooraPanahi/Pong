@@ -1,9 +1,9 @@
 #include "tools.hpp"
 #include <cmath>
 
-Paddle::Paddle(float x, float y) 
-    : rect{x, y, 20, 100},
-      speed{8.0f} {}
+
+Paddle::Paddle(float x, float y)
+    : rect{ x, y, 20, 100 }, speed{ 8.0f }, errorRange{ 15.0f }, reactionDelay{ 0.1f }, lastReactionTime{ 0.0 } {}
 
 void Paddle::draw() const {
     DrawRectangleRec(rect, WHITE);
@@ -16,42 +16,55 @@ void Paddle::moveUp() {
 
 void Paddle::moveDown() {
     rect.y += speed;
-    if (rect.y > GetScreenHeight() - rect.height)
-        rect.y = GetScreenHeight() - rect.height;
-}
-
-void Paddle::aiMove(float ballY, float ballSpeedX) {
-    float dynamicError = GetRandomValue(-errorRange, errorRange) * (1.0f + std::abs(ballSpeedX)/10.0f);
-    
-    float paddleCenter = rect.y + rect.height/2 + dynamicError;
-    float reactionThreshold = 20.0f;
-    
-    if (GetRandomValue(0, 100) < 80 && GetTime() > lastReactionTime + 0.1f) {
-        
-        if (paddleCenter < ballY - reactionThreshold) {
-            moveDown();
-            lastReactionTime = GetTime();
-        }
-        else if (paddleCenter > ballY + reactionThreshold) {
-            moveUp();
-            lastReactionTime = GetTime();
-        }
-    }
+    if (rect.y > GetScreenHeight() - rect.height) rect.y = GetScreenHeight() - rect.height;
 }
 
 void Paddle::reset() {
-    rect.y = GetScreenHeight()/2 - rect.height/2;
+    rect.y = GetScreenHeight() / 2 - rect.height / 2;
 }
 
-void Paddle::setSpeed(float newSpeed) {
-    speed = newSpeed;
+void Paddle::updateAI(const Ball& ball) {
+    float targetY = calculateTargetY(ball);
+    moveTowards(targetY);
 }
 
-Ball::Ball(float x, float y) 
-    : position{x, y},
-      velocity{5.0f, 5.0f},
-      radius{10.0f},
-      color{WHITE} {}
+
+bool Paddle::shouldReactToBall(const Ball& ball) const {
+    return GetTime() - lastReactionTime >= reactionDelay;
+}
+
+float Paddle::calculateTargetY(const Ball& ball) const {
+    float predictionError = GetRandomValue(-errorRange, errorRange);
+    float predictedY = ball.getY() + predictionError;
+
+    if (predictedY < 0) {
+        predictedY = 0;
+    } else if (predictedY > GetScreenHeight() - rect.height) {
+        predictedY = GetScreenHeight() - rect.height;
+    }
+
+    return predictedY;
+}
+
+
+void Paddle::moveTowards(float targetY) {
+    float paddleCenter = rect.y + rect.height / 2;
+    float threshold = 15.0f;
+    if (paddleCenter < targetY - threshold) moveDown();
+    else if (paddleCenter > targetY + threshold) moveUp();
+    lastReactionTime = GetTime();
+}
+
+Rectangle Paddle::getRect() const { return rect; }
+float Paddle::getY() const { return rect.y; }
+float Paddle::getHeight() const { return rect.height; }
+void Paddle::setSpeed(float newSpeed) { speed = newSpeed; }
+void Paddle::setReactionDelay(float delay) { reactionDelay = delay; }
+void Paddle::setErrorRange(float range) { errorRange = range; }
+
+// === Ball Implementation ===
+Ball::Ball(float x, float y)
+    : position{ x, y }, velocity{ INITIAL_BALL_SPEED, INITIAL_BALL_SPEED }, radius{ 10.0f }, color{ WHITE } {}
 
 void Ball::draw() const {
     DrawCircleV(position, radius, color);
@@ -60,39 +73,37 @@ void Ball::draw() const {
 void Ball::update() {
     position.x += velocity.x;
     position.y += velocity.y;
-    
-    if (position.y <= radius || position.y >= GetScreenHeight() - radius) {
-        bounceY();
-    }
+    checkWallCollision();
 }
-
-void Ball::bounceX() {
-    velocity.x *= -1;
-    velocity.x *= 1.05f; 
-    velocity.y *= 1.05f;
-}
-
-void Ball::bounceY() {
-    velocity.y *= -1;
+void Ball::reset() {
+    position = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
+    float dirX = (GetRandomValue(0, 1) == 0) ? -1.0f : 1.0f;
+    float dirY = (GetRandomValue(0, 1) == 0) ? -1.0f : 1.0f;
+    velocity = { INITIAL_BALL_SPEED * dirX, INITIAL_BALL_SPEED * dirY };
 }
 
 bool Ball::checkCollision(Rectangle paddle) const {
     return CheckCollisionCircleRec(position, radius, paddle);
 }
 
-bool Ball::outOfBounds() const {
-    return (position.x < -radius || position.x > GetScreenWidth() + radius);
+bool Ball::isOutOfBounds() const {
+    return position.x < 0 || position.x > GetScreenWidth();
 }
 
-void Ball::reset(float x, float y) {
-    position = {x, y};
-    velocity = {5.0f * (GetRandomValue(0, 1) ? 1 : -1), 
-                5.0f * (GetRandomValue(0, 1) ? 1 : -1)};
-}
-void Ball::setVelocityY(float newY) {
-    velocity.y = newY;
+void Ball::bounceX() {
+    velocity.x *= -1;
 }
 
-Vector2 Ball::getVelocity(){
-    return velocity;
+void Ball::bounceY() {
+    velocity.y *= -1;
+}
+
+Vector2 Ball::getPosition() const { return position; }
+float Ball::getX() const { return position.x; }
+float Ball::getY() const { return position.y; }
+Vector2 Ball::getVelocity() const { return velocity; }
+void Ball::setVelocityY(float newY) { velocity.y = newY; }
+
+void Ball::checkWallCollision() {
+    if (position.y <= 0 || position.y >= GetScreenHeight()) bounceY();
 }

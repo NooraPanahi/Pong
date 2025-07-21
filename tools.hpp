@@ -2,46 +2,60 @@
 #define TOOLS_H
 #include <raylib.h>
 #include <cmath>
+class Ball; // Forward declaration
 class Paddle {
-private:
-    Rectangle rect;
-    float speed;
-    float lastReactionTime = 0;
-    float errorRange = 15.0f;
-    
 public:
     Paddle(float x, float y);
     void draw() const;
     void moveUp();
     void moveDown();
-    void aiMove(float ballY, float ballSpeedX);
     void reset();
+    void updateAI(const Ball& ball);
+
+    Rectangle getRect() const;
+    float getY() const;
+    float getHeight() const;
+
     void setSpeed(float newSpeed);
-    Rectangle getRect() const { return rect; }
-    
-    void setErrorRange(float range) { errorRange = range; }
+    void setReactionDelay(float delay);
+    void setErrorRange(float range);
+
+private:
+    Rectangle rect;
+    float speed;
+    float errorRange;
+    float reactionDelay;
+    double lastReactionTime;
+
+    bool shouldReactToBall(const Ball& ball) const;
+    float calculateTargetY(const Ball& ball) const;
+    void moveTowards(float targetY);
 };
 
 class Ball {
-private:
-    Vector2 position;
-    Vector2 velocity;
-    float radius;
-    Color color ; 
-    
 public:
     Ball(float x, float y);
     void draw() const;
     void update();
+    void reset();
+    bool checkCollision(Rectangle paddle) const;
+    bool isOutOfBounds() const;
     void bounceX();
     void bounceY();
-    void reset(float x, float y);
-    bool checkCollision(Rectangle paddle) const ;
-    bool outOfBounds() const;
-    float getX() const { return position.x; }
-    float getY() const { return position.y; }
-    void setVelocityY(float newY) ;
-    Vector2 getVelocity() ; 
+    Vector2 getPosition() const;
+    float getX() const;
+    float getY() const;
+    Vector2 getVelocity() const;
+    void setVelocityY(float newY);
+
+private:
+    Vector2 position;
+    Vector2 velocity;
+    float radius;
+    Color color;
+    static constexpr float INITIAL_BALL_SPEED = 5.0f;
+
+    void checkWallCollision();
 };
 
 #endif
