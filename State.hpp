@@ -99,6 +99,7 @@ class GameOverState : public State{
     std::string winnerText;
     ClickableText backToMenu;
     Sound clickSound;
+    Font font;
 
     public:
         GameOverState(const std::string& winner);
