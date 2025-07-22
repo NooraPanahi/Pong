@@ -6,10 +6,10 @@ ClickableText::ClickableText(const std::string& txt, Vector2 pos, int size, Colo
     bounds = { pos.x, pos.y, (float)width, (float)fontSize };
 }
 
-void ClickableText::Draw(Vector2 mousePos) {
+void ClickableText::Draw(Vector2 mousePos , Color color) {
     DrawText(text.c_str(), position.x, position.y, fontSize, color);
     if (CheckCollisionPointRec(mousePos, bounds)) {
-        DrawRectangleLines(bounds.x, bounds.y, bounds.width, bounds.height, RED);
+        DrawRectangleLines(bounds.x, bounds.y, bounds.width, bounds.height, color);
     }
 }
 
@@ -19,18 +19,20 @@ bool ClickableText::isClicked(Vector2 mousePos, bool click) const {
     }
     return false ; 
 }
-// ClickableText::~ClickableText(){
-//     UnloadSound(sound) ; 
-// }
 
 Button::Button(const std::string& path, Vector2 position) {
     texture = LoadTexture(path.c_str());
     bounds = { position.x, position.y, (float)texture.width, (float)texture.height };
 }
-void Button::Draw(Vector2 mousePos){
-    DrawTexture(texture, bounds.x, bounds.y, WHITE);
-    if (CheckCollisionPointRec(mousePos, bounds)) {
-        DrawRectangleLines(bounds.x, bounds.y, bounds.width, bounds.height, RED);
+void Button::Draw(Vector2 mousePos , float scale) {
+
+    Vector2 position = { bounds.x, bounds.y };
+    DrawTextureEx(texture, position, 0.0f, scale, WHITE);
+
+    Rectangle scaledBounds = {bounds.x,bounds.y,texture.width * scale,texture.height * scale };
+
+    if (CheckCollisionPointRec(mousePos, scaledBounds)) {
+        DrawRectangleLines(scaledBounds.x, scaledBounds.y, scaledBounds.width, scaledBounds.height, RED);
     }
 }
 

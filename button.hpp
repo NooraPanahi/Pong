@@ -13,7 +13,7 @@ private:
     Rectangle bounds;
 public:
     ClickableText(const std::string&, Vector2, int, Color);
-    void Draw(Vector2 mousePos);
+    void Draw(Vector2 mousePos , Color = RED);
     bool isClicked(Vector2 mousePos, bool click) const;
 };
 
@@ -24,7 +24,7 @@ class Button {
         Rectangle bounds;
     public:
         Button(const std::string& path, Vector2 position);
-        void Draw(Vector2 mousePos);
+        void Draw(Vector2 mousePos , float scale = 0.5f);
         bool isPressed(Vector2 mousePos, bool click);
         ~Button();
 };
@@ -35,7 +35,6 @@ struct TextBox {
     bool active;
     TextBox(): rect({0,0,0,0}), text(""), active(false) {} ;
 
-    TextBox(Rectangle r) : 
-        rect(r), text(""), active(false) {}
+    TextBox(Rectangle r) : rect(r), text(""), active(false) {}
 };
 #endif
