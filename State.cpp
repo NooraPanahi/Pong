@@ -16,9 +16,9 @@ Texture2D State::get_background() const{
 
 
 StartState::StartState() 
-    : State("../Assets/Background.png"), 
-      startButton("../Assets/Startgame.png", {170, 300}),
-      exitButton("../Assets/Exit.png", {170, 500}){
+    : State("../Assets/back-ground.png"), 
+      startButton("../Assets/start-button.png", {100, 700}),
+      exitButton("../Assets/Exit-button.png", {550, 700}){
     sound = LoadSound("../Assets/Click.wav");    
       }
 
@@ -29,7 +29,7 @@ void StartState::displayState(Menu& menu)  {
         bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
         startButton.Draw(mouse);
-        exitButton.Draw(mouse);
+        exitButton.Draw(mouse , 1.3f);
 
         if (startButton.isPressed(mouse, click)) {
             PlaySound(sound) ; 
@@ -82,8 +82,8 @@ ExitState::~ExitState(){
 }
 
 NameInputState::NameInputState() : State("../Assets/Background.png") {
-    box = TextBox({100, 150, 300, 40});
-    continueButton = {300, 500, 200, 50};
+    box = TextBox({350, 380, 300, 40});
+    continueButton = {350, 500, 200, 50};
     sound = LoadSound("../Assets/Click.wav"); 
 }
 
@@ -125,7 +125,7 @@ void NameInputState::displayState(Menu& menu) {
             }
         }
 
-    DrawText("Enter Your Name:", 100, 100, 20, RED);
+    DrawText("Enter Your Name:", 350, 300, 30, RED);
     
     DrawRectangleRec(box.rect, box.active ? LIGHTGRAY : GRAY);
     DrawRectangleLinesEx(box.rect, 2, box.active ? RED : DARKGRAY);
@@ -159,10 +159,10 @@ NameInputState::~NameInputState(){
 }
 DifficultySelectionState::DifficultySelectionState(const std::string& name)
     : State("../Assets/Background.png"), playerName(name),
-      easy("EASY", {200, 300}, 40, GREEN),
-      medium("MEDIUM", {200, 400}, 40, YELLOW),
-      hard("HARD", {200, 500}, 40, RED),
-      back("Back", {100, 900}, 30, WHITE)
+      easy("EASY", {350, 300}, 40, GREEN),
+      medium("MEDIUM", {350, 400}, 40, YELLOW),
+      hard("HARD", {350, 500}, 40, BLUE),
+      back("Back", {100, 900}, 30, RED)
 {
     clickSound = LoadSound("../Assets/Click.wav");
 }
@@ -176,9 +176,9 @@ void DifficultySelectionState::displayState(Menu& menu) {
     Vector2 mouse = GetMousePosition();
     bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 
-    easy.Draw(mouse);
-    medium.Draw(mouse);
-    hard.Draw(mouse);
+    easy.Draw(mouse ,GREEN);
+    medium.Draw(mouse ,YELLOW);
+    hard.Draw(mouse ,BLUE);
     back.Draw(mouse);
 
     if (easy.isClicked(mouse, click)) {
@@ -223,9 +223,9 @@ GameState::~GameState() {
 void GameState::setDifficulty(Difficulty diff) {
     currentDiff = diff;
     switch (diff) {
-        case EASY: ai.setSpeed(6.0f); ai.setErrorRange(40.0f); ai.setReactionDelay(0.05f); break;
+        case EASY: ai.setSpeed(5.0f); ai.setErrorRange(50.0f); ai.setReactionDelay(1.0f); break;
         case MEDIUM: ai.setSpeed(8.0f); ai.setErrorRange(25.0f); ai.setReactionDelay(0.02f); break;
-        case HARD: ai.setSpeed(10.0f); ai.setErrorRange(10.0f); ai.setReactionDelay(0.005f); break;
+        case HARD: ai.setSpeed(15.0f); ai.setErrorRange(10.0f); ai.setReactionDelay(0.015f); break;
     }
 }
 
@@ -315,8 +315,10 @@ bool GameState::isGameOver() const {
 GameOverState::GameOverState(const std::string& winner)
     : State("../Assets/Background.png"),
       winnerText(winner + " WINS!"),
-      backToMenu("Back to Menu", {300, 500}, 40, WHITE) {
+      backToMenu("Back to Menu", {100, 900}, 40, RED) {
     clickSound = LoadSound("../Assets/Click.wav");
+    font = LoadFont("../Assets/BitcountSingle_Cursive-ExtraLight.ttf");
+
 }
 
 GameOverState::~GameOverState() {
@@ -329,11 +331,8 @@ void GameOverState::displayState(Menu& menu) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.5f));
     
     Vector2 textSize = MeasureTextEx(GetFontDefault(), winnerText.c_str(), 60, 2);
-    Vector2 textPos = {
-        (GetScreenWidth() - textSize.x)/2,
-        (GetScreenHeight() - textSize.y)/2 - 50
-    };
-    DrawTextEx(GetFontDefault(), winnerText.c_str(), textPos, 60, 2, GOLD);
+    Vector2 textPos = { (GetScreenWidth() - textSize.x)/2, (GetScreenHeight() - textSize.y)/2 - 50};
+    DrawTextEx(font, winnerText.c_str(), textPos, 60, 2, GOLD);
     
     Vector2 mouse = GetMousePosition();
     bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
