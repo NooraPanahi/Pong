@@ -2,7 +2,31 @@
 #define TOOLS_H
 #include <raylib.h>
 #include <cmath>
-class Ball; // Forward declaration
+
+class Ball {
+public:
+    Ball(float x, float y);
+    void draw() const;
+    void update();
+    void reset();
+    bool checkCollision(Rectangle paddle) const;
+    bool isOutOfBounds() const;
+    void bounceX();
+    void bounceY();
+    Vector2 getPosition() const;
+    float getX() const;
+    float getY() const;
+    Vector2 getVelocity() const;
+    void setVelocityY(float newY);
+    void checkWallCollision();
+
+private:
+    Vector2 position;
+    Vector2 velocity;
+    float radius;
+    Color color;
+};
+
 class Paddle {
 public:
     Paddle(float x, float y);
@@ -32,30 +56,5 @@ private:
     void moveTowards(float targetY);
 };
 
-class Ball {
-public:
-    Ball(float x, float y);
-    void draw() const;
-    void update();
-    void reset();
-    bool checkCollision(Rectangle paddle) const;
-    bool isOutOfBounds() const;
-    void bounceX();
-    void bounceY();
-    Vector2 getPosition() const;
-    float getX() const;
-    float getY() const;
-    Vector2 getVelocity() const;
-    void setVelocityY(float newY);
-
-private:
-    Vector2 position;
-    Vector2 velocity;
-    float radius;
-    Color color;
-    static constexpr float INITIAL_BALL_SPEED = 5.0f;
-
-    void checkWallCollision();
-};
 
 #endif

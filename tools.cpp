@@ -2,8 +2,7 @@
 #include <cmath>
 
 
-Paddle::Paddle(float x, float y)
-    : rect{ x, y, 20, 100 }, speed{ 8.0f }, errorRange{ 15.0f }, reactionDelay{ 0.1f }, lastReactionTime{ 0.0 } {}
+Paddle::Paddle(float x, float y): rect{ x, y, 20, 100 }, speed{ 8.0f }, errorRange{ 15.0f }, reactionDelay{ 0.1f }, lastReactionTime{ 0.0 } {}
 
 void Paddle::draw() const {
     DrawRectangleRec(rect, WHITE);
@@ -62,9 +61,7 @@ void Paddle::setSpeed(float newSpeed) { speed = newSpeed; }
 void Paddle::setReactionDelay(float delay) { reactionDelay = delay; }
 void Paddle::setErrorRange(float range) { errorRange = range; }
 
-// === Ball Implementation ===
-Ball::Ball(float x, float y)
-    : position{ x, y }, velocity{ INITIAL_BALL_SPEED, INITIAL_BALL_SPEED }, radius{ 10.0f }, color{ WHITE } {}
+Ball::Ball(float x, float y): position{ x, y }, velocity{ 5.0f, 5.0f }, radius{ 10.0f }, color{ WHITE } {}
 
 void Ball::draw() const {
     DrawCircleV(position, radius, color);
@@ -79,7 +76,7 @@ void Ball::reset() {
     position = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
     float dirX = (GetRandomValue(0, 1) == 0) ? -1.0f : 1.0f;
     float dirY = (GetRandomValue(0, 1) == 0) ? -1.0f : 1.0f;
-    velocity = { INITIAL_BALL_SPEED * dirX, INITIAL_BALL_SPEED * dirY };
+    velocity = { 5.0f * dirX, 5.0f * dirY };
 }
 
 bool Ball::checkCollision(Rectangle paddle) const {
