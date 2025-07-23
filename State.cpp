@@ -323,6 +323,7 @@ GameOverState::GameOverState(const std::string& winner)
 
 GameOverState::~GameOverState() {
     UnloadSound(clickSound);
+    UnloadFont(font) ;
 }
 
 void GameOverState::displayState(Menu& menu) {
